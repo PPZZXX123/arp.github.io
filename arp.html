@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARP网络攻击工具</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        danger: '#F53F3F',
+                        success: '#00B42A',
+                        dark: '#1D2129',
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="font-inter bg-gray-50 text-gray-800 min-h-screen">
+    <!-- 导航栏 -->
+    <nav class="bg-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center">
+                    <i class="fa fa-random text-primary text-2xl mr-2"></i>
+                    <span class="text-xl font-bold text-dark">ARP网络攻击工具</span>
+                </div>
+                <div class="hidden md:flex space-x-6">
+                    <a href="#scan" class="text-gray-600 hover:text-primary">网络扫描</a>
+                    <a href="#attack" class="text-gray-600 hover:text-primary">ARP攻击</a>
+                    <a href="#ddos" class="text-gray-600 hover:text-primary">DDOS攻击</a>
+                    <a href="#monitor" class="text-gray-600 hover:text-primary">实时监控</a>
+                </div>
+                <div class="md:hidden">
+                    <button id="mobile-menu-button" class="text-gray-600 hover:text-primary">
+                        <i class="fa fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- 移动端菜单 -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white px-4 pb-4">
+            <div class="space-y-2 pt-2">
+                <a href="#scan" class="block text-gray-600 hover:text-primary py-2">网络扫描</a>
+                <a href="#attack" class="block text-gray-600 hover:text-primary py-2">ARP攻击</a>
+                <a href="#ddos" class="block text-gray-600 hover:text-primary py-2">DDOS攻击</a>
+                <a href="#monitor" class="block text-gray-600 hover:text-primary py-2">实时监控</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 英雄区域 -->
+    <header class="bg-primary text-white py-12">
+        <div class="container mx-auto px-4">
+            <h1 class="text-3xl font-bold mb-4">ARP网络攻击工具</h1>
+            <p class="text-lg max-w-2xl">强大的ARP扫描与攻击工具，用于网络安全测试和学习。</p>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <!-- 状态概览 -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-primary">
+                <div class="flex items-center">
+                    <div class="bg-blue-100 p-2 rounded-full mr-3">
+                        <i class="fa fa-desktop text-primary"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">已扫描设备</p>
+                        <p class="text-xl font-bold text-gray-900" id="scanned-devices-count">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-danger">
+                <div class="flex items-center">
+                    <div class="bg-red-100 p-2 rounded-full mr-3">
+                        <i class="fa fa-bolt text-danger"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">正在攻击</p>
+                        <p class="text-xl font-bold text-gray-900" id="active-attacks-count">0</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-4 border-l-4 border-success">
+                <div class="flex items-center">
+                    <div class="bg-green-100 p-2 rounded-full mr-3">
+                        <i class="fa fa-check-circle text-success"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">攻击成功率</p>
+                        <p class="text-xl font-bold text-gray-900" id="attack-success-rate">0%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 扫描区域 -->
+        <section id="scan" class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">网络扫描</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label for="scan-ip-range" class="block text-sm font-medium text-gray-700 mb-1">IP范围</label>
+                    <input type="text" id="scan-ip-range" value="192.168.1.1-192.168.1.254" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label for="scan-method" class="block text-sm font-medium text-gray-700 mb-1">扫描方法</label>
+                    <select id="scan-method" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                        <option value="arp">ARP扫描</option>
+                        <option value="ping">Ping扫描</option>
+                    </select>
+                </div>
+            </div>
+            <button id="start-scan" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg">
+                <i class="fa fa-search mr-2"></i> 开始扫描
+            </button>
+            
+            <div id="scan-results" class="mt-6 hidden">
+                <h3 class="text-lg font-medium mb-3">扫描结果</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">IP地址</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">MAC地址</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scan-results-table" class="bg-white divide-y divide-gray-200">
+                            <!-- 扫描结果将在这里动态显示 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ARP攻击区域 -->
+        <section id="attack" class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">ARP攻击</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-lg font-medium mb-3">ARP断网攻击</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="target-ip-disconnect" class="block text-sm font-medium text-gray-700 mb-1">目标IP</label>
+                            <input type="text" id="target-ip-disconnect" placeholder="192.168.1.100" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label for="gateway-ip-disconnect" class="block text-sm font-medium text-gray-700 mb-1">网关IP</label>
+                            <input type="text" id="gateway-ip-disconnect" placeholder="192.168.1.1" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div class="flex gap-2">
+                            <button id="start-disconnect-attack" class="flex-1 bg-danger hover:bg-danger/90 text-white px-4 py-2 rounded-lg">
+                                <i class="fa fa-power-off mr-2"></i> 开始攻击
+                            </button>
+                            <button id="stop-disconnect-attack" class="flex-1 bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg">
+                                <i class="fa fa-stop mr-2"></i> 停止攻击
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-medium mb-3">ARP中间人攻击</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="target-ip-mitm" class="block text-sm font-medium text-gray-700 mb-1">目标IP</label>
+                            <input type="text" id="target-ip-mitm" placeholder="192.168.1.100" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label for="gateway-ip-mitm" class="block text-sm font-medium text-gray-700 mb-1">网关IP</label>
+                            <input type="text" id="gateway-ip-mitm" placeholder="192.168.1.1" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div class="flex gap-2">
+                            <button id="start-mitm-attack" class="flex-1 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg">
+                                <i class="fa fa-exchange mr-2"></i> 开始攻击
+                            </button>
+                            <button id="stop-mitm-attack" class="flex-1 bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg">
+                                <i class="fa fa-stop mr-2"></i> 停止攻击
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DDOS攻击区域 -->
+        <section id="ddos" class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">DDOS攻击</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label for="ddos-target-ip" class="block text-sm font-medium text-gray-700 mb-1">目标IP</label>
+                    <input type="text" id="ddos-target-ip" placeholder="192.168.1.100" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label for="ddos-target-port" class="block text-sm font-medium text-gray-700 mb-1">目标端口</label>
+                    <input type="number" id="ddos-target-port" min="1" max="65535" value="80" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                </div>
+                <div>
+                    <label for="ddos-attack-type" class="block text-sm font-medium text-gray-700 mb-1">攻击类型</label>
+                    <select id="ddos-attack-type" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                        <option value="tcp-syn">TCP SYN Flood</option>
+                        <option value="udp">UDP Flood</option>
+                        <option value="http">HTTP Flood</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="ddos-duration" class="block text-sm font-medium text-gray-700 mb-1">持续时间(秒)</label>
+                    <input type="number" id="ddos-duration" min="10" max="3600" value="60" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button id="start-ddos-attack" class="flex-1 bg-danger hover:bg-danger/90 text-white px-4 py-2 rounded-lg">
+                    <i class="fa fa-bomb mr-2"></i> 开始攻击
+                </button>
+                <button id="stop-ddos-attack" class="flex-1 bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg">
+                    <i class="fa fa-stop mr-2"></i> 停止攻击
+                </button>
+            </div>
+        </section>
+
+        <!-- 监控区域 -->
+        <section id="monitor" class="bg-white rounded-xl shadow-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">实时监控</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-lg font-medium mb-3">ARP流量监控</h3>
+                    <div class="h-64">
+                        <canvas id="arp-traffic-chart"></canvas>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-lg font-medium mb-3">系统资源监控</h3>
+                    <div class="h-64">
+                        <canvas id="system-resource-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 攻击提示容器 -->
+    <div id="attack-notification" class="fixed top-4 right-4 z-50 max-w-sm hidden">
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden border-l-4 border-danger">
+            <div class="p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fa fa-exclamation-triangle text-danger text-xl"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-gray-800" id="notification-title">攻击已启动</h3>
+                        <div class="mt-2 text-sm text-gray-600" id="notification-message">
+                            正在对目标发起ARP断网攻击...
+                        </div>
+                        <div class="mt-4">
+                            <button id="close-notification" class="text-xs font-medium text-primary hover:text-primary/80">
+                                知道了
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-dark text-white py-8 mt-12">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <div class="flex items-center">
+                        <i class="fa fa-random text-primary text-2xl mr-2"></i>
+                        <span class="text-xl font-bold">ARP网络攻击工具</span>
+                    </div>
+                    <p class="text-gray-400 mt-2 text-sm">仅供网络安全测试和学习使用</p>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-gray-400 hover:text-white">
+                        <i class="fa fa-github text-xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white">
+                        <i class="fa fa-twitter text-xl"></i>
+                    </a>
+                    <a href="#" class="text-gray-400 hover:text-white">
+                        <i class="fa fa-linkedin text-xl"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-6 pt-6 text-center text-gray-400 text-sm">
+                &copy; 2025 ARP网络攻击工具. 保留所有权利.
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 移动端菜单切换
+        document.getElementById('mobile-menu-button').addEventListener('click', function() {
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // 扫描功能模拟
+        document.getElementById('start-scan').addEventListener('click', function() {
+            const resultsContainer = document.getElementById('scan-results');
+            resultsContainer.classList.remove('hidden');
+            
+            // 模拟扫描结果
+            const tableBody = document.getElementById('scan-results-table');
+            tableBody.innerHTML = '';
+            
+            const scanResults = [
+                { ip: '192.168.1.1', mac: '00:11:22:33:44:55', status: '在线' },
+                { ip: '192.168.1.100', mac: 'AA:BB:CC:DD:EE:FF', status: '在线' },
+                { ip: '192.168.1.101', mac: '11:22:33:44:55:66', status: '在线' },
+                { ip: '192.168.1.102', mac: '77:88:99:AA:BB:CC', status: '离线' }
+            ];
+            
+            // 更新设备计数
+            document.getElementById('scanned-devices-count').textContent = scanResults.length;
+            
+            scanResults.forEach(result => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">${result.ip}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${result.mac}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${result.status === '在线' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                            ${result.status}
+                        </span>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        });
+
+        // 攻击提示功能
+        function showAttackNotification(title, message) {
+            const notification = document.getElementById('attack-notification');
+            document.getElementById('notification-title').textContent = title;
+            document.getElementById('notification-message').textContent = message;
+            
+            notification.classList.remove('hidden');
+            notification.classList.add('animate-fade-in');
+            
+            // 5秒后自动关闭
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 5000);
+        }
+        
+        document.getElementById('close-notification').addEventListener('click', function() {
+            document.getElementById('attack-notification').classList.add('hidden');
+        });
+
+        // 攻击按钮事件
+        document.getElementById('start-disconnect-attack').addEventListener('click', function() {
+            const targetIP = document.getElementById('target-ip-disconnect').value;
+            if (!targetIP) {
+                alert('请输入目标IP地址');
+                return;
+            }
+            
+            showAttackNotification('ARP断网攻击已启动', `正在对 ${targetIP} 发起ARP断网攻击...`);
+            
+            // 更新攻击计数
+            const countElement = document.getElementById('active-attacks-count');
+            let count = parseInt(countElement.textContent);
+            countElement.textContent = count + 1;
+            
+            // 按钮动画
+            this.classList.add('animate-pulse');
+            setTimeout(() => this.classList.remove('animate-pulse'), 1000);
+        });
+        
+        document.getElementById('start-mitm-attack').addEventListener('click', function() {
+            const targetIP = document.getElementById('target-ip-mitm').value;
+            if (!targetIP) {
+                alert('请输入目标IP地址');
+                return;
+            }
+            
+            showAttackNotification('ARP中间人攻击已启动', `正在对 ${targetIP} 发起ARP中间人攻击...`);
+            
+            // 更新攻击计数
+            const countElement = document.getElementById('active-attacks-count');
+            let count = parseInt(countElement.textContent);
+            countElement.textContent = count + 1;
+            
+            // 按钮动画
+            this.classList.add('animate-pulse');
+            setTimeout(() => this.classList.remove('animate-pulse'), 1000);
+        });
+        
+        document.getElementById('start-ddos-attack').addEventListener('click', function() {
+            const targetIP = document.getElementById('ddos-target-ip').value;
+            const attackType = document.getElementById('ddos-attack-type').value;
+            
+            if (!targetIP) {
+                alert('请输入目标IP地址');
+                return;
+            }
+            
+            // 转换攻击类型显示名称
+            let attackTypeName = '未知类型';
+            switch(attackType) {
+                case 'tcp-syn':
+                    attackTypeName = 'TCP SYN Flood';
+                    break;
+                case 'udp':
+                    attackTypeName = 'UDP Flood';
+                    break;
+                case 'http':
+                    attackTypeName = 'HTTP Flood';
+                    break;
+            }
+            
+            showAttackNotification('DDOS攻击已启动', `正在对 ${targetIP} 发起 ${attackTypeName} 攻击，持续时间 ${document.getElementById('ddos-duration').value} 秒...`);
+            
+            // 更新攻击计数
+            const countElement = document.getElementById('active-attacks-count');
+            let count = parseInt(countElement.textContent);
+            countElement.textContent = count + 1;
+            
+            // 按钮动画
+            this.classList.add('animate-pulse');
+            setTimeout(() => this.classList.remove('animate-pulse'), 1000);
+        });
+        
+        // 停止攻击按钮事件
+        document.getElementById('stop-disconnect-attack').addEventListener('click', function() {
+            showAttackNotification('ARP断网攻击已停止', 'ARP断网攻击已成功停止');
+            
+            // 更新攻击计数
+            const countElement = document.getElementById('active-attacks-count');
+            let count = parseInt(countElement.textContent);
+            if (count > 0) countElement.textContent = count - 1;
+            
+            // 按钮动画
+            this.classList.add('animate-pulse');
+            setTimeout(() => this.classList.remove('animate-pulse'), 1000);
+        });
+        
+        document.getElementById('stop-mitm-attack').addEventListener('click', function() {
+            showAttackNotification('ARP中间人攻击已停止', 'ARP中间人攻击已成功停止');
+            
+            // 更新攻击计数
+            const countElement = document.getElementById('active-attacks-count');
+            let count = parseInt(countElement.textContent);
+            if (count > 0) countElement.textContent = count - 1;
+            
+            // 按钮动画
+            this.classList.add('animate-pulse');
+            setTimeout(() => this.classList.remove('animate-pulse'), 1000);
+        });
+        
+        document.getElementById('stop-ddos-attack').addEventListener('click', function() {
+            showAttackNotification('DDOS攻击已停止', 'DDOS攻击已成功停止');
+            
+            // 更新攻击计数
+            const countElement = document.getElementById('active-attacks-count');
+            let count = parseInt(countElement.textContent);
+            if (count > 0) countElement.textContent = count - 1;
+            
+            // 按钮动画
+            this.classList.add('animate-pulse');
+            setTimeout(() => this.classList.remove('animate-pulse'), 1000);
+        });
+
+        // 图表初始化
+        const arpTrafficCtx = document.getElementById('arp-traffic-chart').getContext('2d');
+        const systemResourceCtx = document.getElementById('system-resource-chart').getContext('2d');
+        
+        const arpTrafficChart = new Chart(arpTrafficCtx, {
+            type: 'line',
+            data: {
+                labels: ['0s', '10s', '20s', '30s', '40s', '50s', '60s'],
+                datasets: [{
+                    label: 'ARP请求',
+                    data: [12, 19, 15, 28, 22, 30, 25],
+                    borderColor: '#165DFF',
+                    backgroundColor: 'rgba(22, 93, 255, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+        
+        const systemResourceChart = new Chart(systemResourceCtx, {
+            type: 'line',
+            data: {
+                labels: ['0s', '10s', '20s', '30s', '40s', '50s', '60s'],
+                datasets: [{
+                    label: 'CPU使用率 (%)',
+                    data: [25, 30, 22, 45, 35, 40, 38],
+                    borderColor: '#F53F3F',
+                    backgroundColor: 'rgba(245, 63, 63, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+
+        // 添加简单的CSS动画
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(-10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .animate-fade-in {
+                animation: fadeIn 0.3s ease forwards;
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
